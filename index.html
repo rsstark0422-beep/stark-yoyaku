@@ -1,0 +1,301 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>出張査定のご予約｜REUSESHOP STARK</title>
+<style>
+  :root {
+    --red: #c8102e;
+    --ink: #1f1f1f;
+    --sub: #6b6b6b;
+    --line: #e3e3e3;
+    --bg: #f6f6f6;
+    --card: #ffffff;
+    --ok: #06c755;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", sans-serif;
+    font-size: 16px; line-height: 1.6;
+  }
+  header { background: var(--red); color: #fff; padding: 14px 16px; }
+  header h1 { margin: 0; font-size: 18px; }
+  header p { margin: 2px 0 0; font-size: 12px; opacity: .9; }
+  main { padding: 16px; max-width: 560px; margin: 0 auto; }
+  .card { background: var(--card); border-radius: 12px; padding: 16px; margin-bottom: 14px; }
+  h2 { font-size: 16px; margin: 0 0 10px; }
+  .step { color: var(--red); font-size: 12px; font-weight: 700; display: block; }
+  .dates { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 6px; }
+  .date {
+    flex: 0 0 auto; border: 1px solid var(--line); background: #fff; border-radius: 10px;
+    padding: 8px 12px; font-size: 14px; color: var(--ink);
+  }
+  .times { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 12px; }
+  .time { border: 1px solid var(--line); background: #fff; border-radius: 10px; padding: 10px 0; font-size: 15px; color: var(--ink); }
+  .date[aria-pressed="true"], .time[aria-pressed="true"] { background: var(--red); border-color: var(--red); color: #fff; }
+  label { display: block; font-size: 14px; font-weight: 700; margin: 12px 0 4px; }
+  label .req { color: var(--red); font-size: 12px; margin-left: 4px; }
+  label .opt { color: var(--sub); font-size: 12px; margin-left: 4px; font-weight: 400; }
+  input, textarea {
+    width: 100%; font: inherit; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: #fff; color: var(--ink);
+  }
+  textarea { min-height: 84px; }
+  .row { display: flex; gap: 8px; }
+  .row > div { flex: 1; }
+  .hint { color: var(--sub); font-size: 12px; margin: 4px 0 0; }
+  .btn {
+    display: block; width: 100%; border: 0; border-radius: 12px; padding: 14px; font: inherit; font-weight: 700;
+    background: var(--red); color: #fff; margin-top: 16px;
+  }
+  .btn:disabled { opacity: .4; }
+  .btn.sub { background: #fff; color: var(--ink); border: 1px solid var(--line); margin-top: 8px; }
+  dl { margin: 0; }
+  dt { font-size: 12px; color: var(--sub); margin-top: 10px; }
+  dd { margin: 0; white-space: pre-wrap; word-break: break-all; }
+  .msg { padding: 12px; border-radius: 10px; background: #fff3f3; color: var(--red); font-size: 14px; margin-bottom: 12px; }
+  .done { text-align: center; }
+  .done .mark { font-size: 44px; color: var(--ok); }
+  .empty, .loading { color: var(--sub); text-align: center; padding: 24px 0; }
+  [hidden] { display: none !important; }
+</style>
+<script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+</head>
+<body>
+<header>
+  <h1>出張査定のご予約</h1>
+  <p>REUSESHOP STARK</p>
+</header>
+
+<main>
+  <div id="error" class="msg" hidden></div>
+
+  <!-- 1. 日時 -->
+  <section id="pick">
+    <div class="card">
+      <span class="step">1 / 3</span>
+      <h2>ご希望の日時を選んでください</h2>
+      <div id="loading" class="loading">空き状況を読み込んでいます…</div>
+      <div id="empty" class="empty" hidden>現在、ご予約いただける枠がありません。<br>LINEのトークでご相談ください。</div>
+      <div id="dates" class="dates" role="group" aria-label="日付"></div>
+      <div id="times" class="times" role="group" aria-label="時間"></div>
+      <p class="hint">査定は1時間ほどです。表示されているのは空いている枠だけです。</p>
+    </div>
+    <button id="toForm" class="btn" disabled>次へ</button>
+  </section>
+
+  <!-- 2. 入力 -->
+  <section id="form" hidden>
+    <div class="card">
+      <span class="step">2 / 3</span>
+      <h2>お客様の情報</h2>
+      <p class="hint" id="chosen1"></p>
+      <div class="row">
+        <div>
+          <label for="sei">姓<span class="req">必須</span></label>
+          <input id="sei" autocomplete="family-name" placeholder="例）橋口">
+        </div>
+        <div>
+          <label for="mei">名<span class="opt">任意</span></label>
+          <input id="mei" autocomplete="given-name" placeholder="例）太郎">
+        </div>
+      </div>
+      <label for="phone">電話番号<span class="req">必須</span></label>
+      <input id="phone" type="tel" autocomplete="tel" inputmode="tel" placeholder="例）090-1234-5678">
+      <label for="address">ご住所（伺う場所）<span class="req">必須</span></label>
+      <input id="address" autocomplete="street-address" placeholder="例）都城市〇〇町1-2-3 〇〇アパート101">
+      <p class="hint">市町村から、建物名・部屋番号までご記入ください。</p>
+      <label for="items">品目・数量<span class="req">必須</span></label>
+      <textarea id="items" placeholder="例）洗濯機1、冷蔵庫1"></textarea>
+      <label for="note">ご要望など<span class="opt">任意</span></label>
+      <textarea id="note" placeholder="例）駐車場あり、2階からの運び出しです"></textarea>
+    </div>
+    <button id="toConfirm" class="btn">確認へ</button>
+    <button id="backPick" class="btn sub">日時を選び直す</button>
+  </section>
+
+  <!-- 3. 確認 -->
+  <section id="confirm" hidden>
+    <div class="card">
+      <span class="step">3 / 3</span>
+      <h2>内容のご確認</h2>
+      <dl id="summary"></dl>
+    </div>
+    <button id="submit" class="btn">この内容で予約する</button>
+    <button id="backForm" class="btn sub">修正する</button>
+  </section>
+
+  <!-- 完了 -->
+  <section id="done" hidden>
+    <div class="card done">
+      <div class="mark">✓</div>
+      <h2>ご予約が完了しました</h2>
+      <p id="doneText"></p>
+      <p class="hint">お品物のお写真2〜3枚を、LINEのトークに送っていただけると査定がスムーズです。</p>
+    </div>
+    <button id="close" class="btn">トークに戻る</button>
+  </section>
+</main>
+
+<script>
+// ▼ 設定（手順書のとおりに書き換える）
+const LIFF_ID = '2012233512-fiPzC0mw';
+const API_URL = 'https://script.google.com/macros/s/AKfycbyPL_1noV47gMlzSxH4nKDPdO8Wo7bPUBDRuwq5Rjj71Ccm0ALEx9_t-l8hVz1dfPIXgA/exec';
+
+const state = { days: [], date: null, time: null };
+const $ = (id) => document.getElementById(id);
+
+function show(id) {
+  ['pick', 'form', 'confirm', 'done'].forEach((s) => { $(s).hidden = s !== id; });
+  window.scrollTo(0, 0);
+}
+function showError(text) {
+  $('error').textContent = text;
+  $('error').hidden = !text;
+  if (text) window.scrollTo(0, 0);
+}
+function chosenLabel() {
+  const day = state.days.find((d) => d.date === state.date);
+  return day ? day.label + ' ' + state.time + '〜' : '';
+}
+
+async function loadSlots() {
+  $('loading').hidden = false;
+  $('empty').hidden = true;
+  $('dates').replaceChildren();
+  $('times').replaceChildren();
+  state.date = null; state.time = null;
+  $('toForm').disabled = true;
+  try {
+    const res = await fetch(API_URL + '?action=slots');
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error);
+    state.days = data.days;
+  } catch (e) {
+    state.days = [];
+    showError('空き状況を読み込めませんでした。時間をおいて開き直すか、LINEのトークでご相談ください。');
+  }
+  $('loading').hidden = true;
+  if (!state.days.length) { $('empty').hidden = false; return; }
+  state.days.forEach((d) => {
+    const b = document.createElement('button');
+    b.className = 'date';
+    b.textContent = d.label;
+    b.setAttribute('aria-pressed', 'false');
+    b.onclick = () => selectDate(d.date);
+    b.dataset.date = d.date;
+    $('dates').appendChild(b);
+  });
+  selectDate(state.days[0].date);
+}
+
+function selectDate(date) {
+  state.date = date; state.time = null;
+  $('toForm').disabled = true;
+  document.querySelectorAll('.date').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.date === date)));
+  const day = state.days.find((d) => d.date === date);
+  $('times').replaceChildren(...day.times.map((t) => {
+    const b = document.createElement('button');
+    b.className = 'time';
+    b.textContent = t;
+    b.setAttribute('aria-pressed', 'false');
+    b.onclick = () => {
+      state.time = t;
+      document.querySelectorAll('.time').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+      $('toForm').disabled = false;
+    };
+    return b;
+  }));
+}
+
+function readForm() {
+  return {
+    sei: $('sei').value.trim(),
+    mei: $('mei').value.trim(),
+    phone: $('phone').value.trim(),
+    address: $('address').value.trim(),
+    items: $('items').value.trim(),
+    note: $('note').value.trim(),
+  };
+}
+
+function validate(f) {
+  if (!f.sei) return '姓を入力してください。';
+  const digits = f.phone.replace(/[^\d]/g, '');
+  if (digits.length < 10 || digits.length > 11) return '電話番号をご確認ください。';
+  if (!f.address) return 'ご住所を入力してください。';
+  if (!f.items) return '品目・数量を入力してください。';
+  return '';
+}
+
+function renderSummary(f) {
+  const rows = [
+    ['日時', chosenLabel()],
+    ['お名前', (f.sei + ' ' + f.mei).trim() + ' 様'],
+    ['電話番号', f.phone],
+    ['ご住所', f.address],
+    ['品目・数量', f.items],
+  ];
+  if (f.note) rows.push(['ご要望', f.note]);
+  $('summary').replaceChildren(...rows.flatMap(([k, v]) => {
+    const dt = document.createElement('dt'); dt.textContent = k;
+    const dd = document.createElement('dd'); dd.textContent = v;
+    return [dt, dd];
+  }));
+}
+
+async function submit() {
+  const f = readForm();
+  $('submit').disabled = true;
+  $('submit').textContent = '送信中…';
+  showError('');
+  try {
+    const res = await fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ ...f, date: state.date, time: state.time, idToken: liff.getIDToken() }),
+    });
+    const data = await res.json();
+    if (data.ok) {
+      $('doneText').textContent = data.label + ' のご予約を承りました。LINEに確認のメッセージをお送りしました。';
+      show('done');
+      return;
+    }
+    showError(data.message || '受付に失敗しました。');
+    if (data.error === 'taken') { show('pick'); loadSlots(); }
+    else if (data.error === 'invalid') show('form');
+  } catch (e) {
+    showError('通信に失敗しました。電波の良いところでもう一度お試しください。');
+  } finally {
+    $('submit').disabled = false;
+    $('submit').textContent = 'この内容で予約する';
+  }
+}
+
+$('toForm').onclick = () => { showError(''); $('chosen1').textContent = 'ご希望日時：' + chosenLabel(); show('form'); };
+$('backPick').onclick = () => { showError(''); show('pick'); };
+$('toConfirm').onclick = () => {
+  const f = readForm();
+  const err = validate(f);
+  showError(err);
+  if (err) return;
+  renderSummary(f);
+  show('confirm');
+};
+$('backForm').onclick = () => show('form');
+$('submit').onclick = submit;
+$('close').onclick = () => { if (liff.isInClient()) liff.closeWindow(); else window.close(); };
+
+liff.init({ liffId: LIFF_ID })
+  .then(() => {
+    if (!liff.isLoggedIn()) { liff.login({ redirectUri: location.href }); return; }
+    loadSlots();
+  })
+  .catch(() => {
+    $('loading').hidden = true;
+    showError('LINEとの接続に失敗しました。LINEアプリから開き直してください。');
+  });
+</script>
+</body>
+</html>
